@@ -53,6 +53,7 @@
 #include "runtime_callbacks.h"
 #include "scoped_thread_state_change-inl.h"
 #include "vdex_file.h"
+//#include "binary_analyzer/binary_analyzer.h"
 
 namespace art {
 
