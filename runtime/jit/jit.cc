@@ -1599,6 +1599,14 @@ void Jit::MethodEntered(Thread* thread, ArtMethod* method) {
   AddSamples(thread, method, 1, /* with_backedges= */false);
 }
 
+bool Jit::AddJniTask(Thread* self, JniTask* task) {
+  if (thread_pool_ == nullptr) {
+    return false;
+  }
+  thread_pool_->AddTask(self, task);
+  return true;
+}
+
 void Jit::WaitForCompilationToFinish(Thread* self) {
   if (thread_pool_ != nullptr) {
     thread_pool_->Wait(self, false, false);
