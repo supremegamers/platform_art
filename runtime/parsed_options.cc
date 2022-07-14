@@ -425,6 +425,10 @@ std::unique_ptr<RuntimeParser> ParsedOptions::MakeParser(bool ignore_unrecognize
           .IntoKey(M::UseStderrLogger)
       .Define("-Xonly-use-system-oat-files")
           .IntoKey(M::OnlyUseTrustedOatFiles)
+      .Define("-XAutoFastJni:_")
+          .WithType<bool>()
+          .WithValueMap({{"false", false}, {"true", true}})
+          .IntoKey(M::AutoFastJni)
       .Define("-Xdeny-art-apex-data-files")
           .IntoKey(M::DenyArtApexDataFiles)
       .Define("-Xverifier-logging-threshold=_")
@@ -475,7 +479,7 @@ std::unique_ptr<RuntimeParser> ParsedOptions::MakeParser(bool ignore_unrecognize
           "-Xincludeselectedmethod",
           "-Xjitblocking", "-Xjitmethod:_", "-Xjitclass:_", "-Xjitoffset:_",
           "-Xjitosrthreshold:_", "-Xjitconfig:_", "-Xjitcheckcg", "-Xjitverbose", "-Xjitprofile",
-          "-Xjitdisableopt", "-Xjitsuspendpoll", "-XX:mainThreadStackSize=_"})
+          "-Xjitdisableopt", "-Xjitsuspendpoll", "-XX:mainThreadStackSize=_", "-XAutoFastJni"})
       .IgnoreUnrecognized(ignore_unrecognized)
       .OrderCategories({"standard", "extended", "Dalvik", "ART"});
 

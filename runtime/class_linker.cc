@@ -56,6 +56,7 @@
 #include "base/unix_file/fd_file.h"
 #include "base/utils.h"
 #include "base/value_object.h"
+#include "binary_analyzer/binary_analyzer.h"
 #include "cha.h"
 #include "class_linker-inl.h"
 #include "class_loader_utils.h"
@@ -415,12 +416,54 @@ ClassLinker::VisiblyInitializedCallback* ClassLinker::MarkClassInitialized(
     return nullptr;
   }
 }
+class AutoFastJniDetectTask final : public jit::JniTask {
+ public:
+  AutoFastJniDetectTask(ArtMethod* method, const void* native_method)
+      : method_(method), native_method_(native_method) { }
+
+  ~AutoFastJniDetectTask() { }
+
+  void Run(Thread* self) override {
+    ScopedObjectAccess soa(self);
+    bool is_fast = IsFastJNI(method_->GetDexMethodIndex(), *method_->GetDexFile(), native_method_);
+    if (is_fast) {
+      method_->SetAccessFlags(method_->GetAccessFlags() | kAccFastNative);
+    }
+  }
+
+  void Finalize() override  {
+    delete this;
+  }
+
+ private:
+  ArtMethod* const method_;
+  const void* native_method_;
+
+  DISALLOW_IMPLICIT_CONSTRUCTORS(AutoFastJniDetectTask);
+};
+
 
 const void* ClassLinker::RegisterNative(
     Thread* self, ArtMethod* method, const void* native_method) {
   CHECK(method->IsNative()) << method->PrettyMethod();
   CHECK(native_method != nullptr) << method->PrettyMethod();
   void* new_native_method = nullptr;
+  if (Runtime::Current()->IsAutoFastDetect()) {
+     // FastJni analysis will be triggered only for native methods during the time of
+     // registration
+     const bool not_going_to_unregister = (native_method != GetJniDlsymLookupStub());
+     if (Runtime::Current()->IsAutoFastDetect() && not_going_to_unregister) {
+        jit::Jit* jit = Runtime::Current()->GetJit();
+        if (jit != nullptr) {
+          jit->AddJniTask(Thread::Current(), new AutoFastJniDetectTask(method, native_method));
+        } else {
+        // auto fastJNI detection doesn't work in AOT at all.
+        // In JIT mode it works too but only between
+        // process startup and JIT creation.
+        }
+     }
+  }
+
   Runtime* runtime = Runtime::Current();
   runtime->GetRuntimeCallbacks()->RegisterNativeMethod(method,
                                                        native_method,

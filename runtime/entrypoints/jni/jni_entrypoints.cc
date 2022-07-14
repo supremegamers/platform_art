@@ -46,6 +46,47 @@ static inline uint32_t GetInvokeStaticMethodIndex(ArtMethod* caller, uint32_t de
   return method_idx;
 }
 
+
+// To ensure mutator lock could be held throughout the code path as a part of compiler error,
+// added the NO_THREAD_SAFETY_ANALYSIS flag */
+const void* artFindNativeMethodFastJni(Thread* self,
+                                     ScopedObjectAccess& soa)
+                                     NO_THREAD_SAFETY_ANALYSIS {   // We continue as Native.
+  bool was_slow = false;
+  bool is_fast = false;
+  const void* return_val = nullptr;
+  {
+    ArtMethod* method = self->GetCurrentMethod(nullptr);
+    ClassLinker* class_linker = Runtime::Current()->GetClassLinker();
+
+    DCHECK(method != nullptr);
+    std::string error_msg;
+
+    // Lookup symbol address for method, on failure we'll return null with an exception set,
+    // otherwise we return the address of the method we found
+    void* native_code = soa.Vm()->FindCodeForNativeMethod(method,  &error_msg, /*can_suspend=*/ true);
+    if (native_code == nullptr) {
+      LOG(ERROR) << error_msg;
+      self->ThrowNewException("Ljava/lang/UnsatisfiedLinkError;", error_msg.c_str());
+      return nullptr;
+    } else {
+      // Register so that future calls don't come here
+      was_slow = !method->IsFastNative();
+      const void* final_function_ptr = class_linker->RegisterNative(self, method, native_code);
+      is_fast = method->IsFastNative();
+      return_val = final_function_ptr;
+    }
+  }
+
+  // The thread does not have to do costly transition from kRunnable to kNative,reducing the
+  // JNI overhead once a method is marked as Fast native.
+  if (was_slow && is_fast) {
+    self->TransitionFromSuspendedToRunnable();
+  }
+  return return_val;
+}
+
+
 // Used by the JNI dlsym stub to find the native method to invoke if none is registered.
 extern "C" const void* artFindNativeMethodRunnable(Thread* self)
     REQUIRES_SHARED(Locks::mutator_lock_) {
@@ -129,7 +170,11 @@ extern "C" const void* artFindNativeMethod(Thread* self) {
   DCHECK_EQ(self, Thread::Current());
   Locks::mutator_lock_->AssertNotHeld(self);  // We come here as Native.
   ScopedObjectAccess soa(self);
-  return artFindNativeMethodRunnable(self);
+  if (Runtime::Current()->IsAutoFastDetect()) {
+    return artFindNativeMethodFastJni(self, soa);
+  } else {
+    return artFindNativeMethodRunnable(self);
+  } 
 }
 
 extern "C" size_t artCriticalNativeFrameSize(ArtMethod* method, uintptr_t caller_pc)

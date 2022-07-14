@@ -309,6 +309,7 @@ Runtime::Runtime()
       // Initially assume we perceive jank in case the process state is never updated.
       process_state_(kProcessStateJankPerceptible),
       zygote_no_threads_(false),
+      auto_fast_detect_(false),
       verifier_logging_threshold_ms_(100),
       verifier_missing_kthrow_fatal_(false),
       perfetto_hprof_enabled_(false),
@@ -1490,11 +1491,10 @@ bool Runtime::Init(RuntimeArgumentMap&& runtime_options_in) {
   is_explicit_gc_disabled_ = runtime_options.Exists(Opt::DisableExplicitGC);
   image_dex2oat_enabled_ = runtime_options.GetOrDefault(Opt::ImageDex2Oat);
   dump_native_stack_on_sig_quit_ = runtime_options.GetOrDefault(Opt::DumpNativeStackOnSigQuit);
-
   if (is_zygote_ || runtime_options.Exists(Opt::OnlyUseTrustedOatFiles)) {
     oat_file_manager_->SetOnlyUseTrustedOatFiles();
   }
-
+  auto_fast_detect_ = runtime_options.GetOrDefault(Opt::AutoFastJni);
   vfprintf_ = runtime_options.GetOrDefault(Opt::HookVfprintf);
   exit_ = runtime_options.GetOrDefault(Opt::HookExit);
   abort_ = runtime_options.GetOrDefault(Opt::HookAbort);
