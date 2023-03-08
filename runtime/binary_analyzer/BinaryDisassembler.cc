@@ -34,7 +34,7 @@ BinaryDisassembler::BinaryDisassembler(InstructionSet insn_set) {
    if (disassembler_ == nullptr) {
       const uint8_t* base_address = nullptr;
       const uint8_t* end_address  = nullptr;
-      disassembler_ = std::unique_ptr<Disassembler>((*create_disassembler)(
+      disassembler_ = std::unique_ptr<Disassembler>(create_disassembler(
                       insn_set,
                       new DisassemblerOptions(/* absolute_addresses */ false,
                                            base_address,

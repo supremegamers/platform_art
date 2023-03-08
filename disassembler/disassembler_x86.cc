@@ -1624,7 +1624,9 @@ DISASSEMBLER_ENTRY(cmp,
   }
   if (insn_x86 != nullptr) {
      std::string tmp = StringPrintf("%s%s%s%s%s",opcode0,opcode1,opcode2,opcode3,opcode4);
-     strcpy(insn_x86->instr_str,tmp.c_str());
+     memset(insn_x86->instr_str,0,INSTR_MNEMONIC_SIZE);
+     strncpy(insn_x86->instr_str,tmp.c_str(),INSTR_MNEMONIC_SIZE);
+     insn_x86->instr_str[INSTR_MNEMONIC_SIZE-1] = '\0';
      /*LOG(INFO) << "op str:" << insn_x86->instr_str;*/
      insn_x86->size = instr - begin_instr;
      insn_x86->prefix[0] = prefix[0];
