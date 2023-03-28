@@ -94,8 +94,8 @@ class BinaryDisassembler {
   size_t DumpInstruction(std::ostream& os, const uint8_t* instr);
   
  private:
-  uint64_t address_;
-  const uint8_t* ptr_;
+  uint64_t address_ = 0;
+  const uint8_t* ptr_ = nullptr;
   std::unique_ptr<Disassembler> disassembler_ = nullptr;
  private:
   DISALLOW_COPY_AND_ASSIGN(BinaryDisassembler);
