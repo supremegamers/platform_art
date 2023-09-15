@@ -124,11 +124,11 @@ class MachineInstruction {
   }
 
  private:
-  std::string instr_;
-  const uint8_t* instr_ptr_;
-  uint8_t length_;
-  MachineInstruction* prev_instr_;
-  MachineInstruction* next_instr_;
+  std::string instr_ {};
+  const uint8_t* instr_ptr_ = nullptr;
+  uint8_t length_ = 0;
+  MachineInstruction* prev_instr_ = nullptr;
+  MachineInstruction* next_instr_ = nullptr;
 };
 
 /**
@@ -675,14 +675,14 @@ class CFGraph {
   }
 
  private:
-  MachineBlock* start_bblock_;
+  MachineBlock* start_bblock_ = nullptr;
   uint32_t num_of_bblocks_ = 0u;
   uint32_t num_of_instrs_ = 0u;
   uint32_t call_depth_ = 0u;
   AnalysisResult state_ = AnalysisResult::kFast;
   std::vector<MachineBlock*> cfg_bblock_list_;
   std::vector<MachineBlock*> visited_bblock_list_;
-  std::string method_name_;
+  std::string method_name_ {};
 };
 
 /**
