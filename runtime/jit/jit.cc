@@ -1484,6 +1484,14 @@ void Jit::MethodEntered(Thread* self, ArtMethod* method) {
   AddSamples(self, method);
 }
 
+bool Jit::AddJniTask(Thread* self, JniTask* task) {
+  if (thread_pool_ == nullptr) {
+    return false;
+  }
+  thread_pool_->AddTask(self, task);
+  return true;
+}
+
 void Jit::WaitForCompilationToFinish(Thread* self) {
   if (thread_pool_ != nullptr) {
     thread_pool_->Wait(self, false, false);
